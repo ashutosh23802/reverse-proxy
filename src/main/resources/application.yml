@@ -1,0 +1,11 @@
+proxy-config:
+  urlMapping:
+    "[/cache]":
+      domain: blogs.ashrithgn.com
+      path: /writing-a-reverse-proxy-service-in-spring-boot/
+    "[/job]":
+      domain: baeldung.com
+      path: /spring-yaml-inject-map
+    "[/dashboard]":
+      domain: baeldung.com
+      path: /spring-yaml-inject-map
