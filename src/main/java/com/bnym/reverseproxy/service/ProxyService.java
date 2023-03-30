@@ -28,14 +28,14 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "proxy-config")
 @Component
 public class ProxyService {
-    private Map<Object, Map<String, String>> urlMapping;
+    private Map<String, String> urlMapping;
     private final static Logger logger = LogManager.getLogger(ProxyService.class);
 
-    public Map<Object, Map<String, String>> getUrlMapping() {
+    public Map<String, String> getUrlMapping() {
         return urlMapping;
     }
 
-    public void setUrlMapping(Map<Object, Map<String, String>> urlMapping) {
+    public void setUrlMapping(Map<String, String> urlMapping) {
         this.urlMapping = urlMapping;
     }
 
@@ -45,13 +45,7 @@ public class ProxyService {
         String requestUrl = request.getRequestURI();
 
         //log if required in this line
-        URI uri = new URI("https", null, urlMapping.get(requestUrl).get("domain"), -1, null, null, null);
-
-        // replacing context path form urI to match actual gateway URI
-        uri = UriComponentsBuilder.fromUri(uri)
-                .path(urlMapping.get(requestUrl).get("path"))
-                .query(request.getQueryString())
-                .build(true).toUri();
+        URI uri = new URI(urlMapping.get(requestUrl));
 
         HttpHeaders headers = new HttpHeaders();
         Enumeration<String> headerNames = request.getHeaderNames();
