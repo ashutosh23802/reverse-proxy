@@ -4,7 +4,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -36,13 +39,45 @@ public class ProxyService {
         this.urlMapping = urlMapping;
     }
 
-    public ResponseEntity<Void> processProxyRequest(String body,
+    public ResponseEntity<String> processProxyRequest(String body,
                                                       HttpMethod method, HttpServletRequest request, HttpServletResponse response, String traceId) throws URISyntaxException {
+        ThreadContext.put("traceId", traceId);
         String requestUrl = request.getRequestURI();
 
         //log if required in this line
         URI uri = new URI(urlMapping.get(requestUrl));
 
-        return ResponseEntity.status(HttpStatus.FOUND).location(uri).build();
-}}
+        HttpHeaders headers = new HttpHeaders();
+        Enumeration<String> headerNames = request.getHeaderNames();
+
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            headers.set(headerName, request.getHeader(headerName));
+        }
+
+        headers.set("TRACE", traceId);
+        headers.remove(HttpHeaders.ACCEPT_ENCODING);
+
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(body, headers);
+        ClientHttpRequestFactory factory = new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory());
+        RestTemplate restTemplate = new RestTemplate(factory);
+        try {
+
+            ResponseEntity<String> serverResponse = restTemplate.exchange(uri, method, httpEntity, String.class);
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.put(HttpHeaders.CONTENT_TYPE, serverResponse.getHeaders().get(HttpHeaders.CONTENT_TYPE));
+            logger.info(serverResponse);
+            return serverResponse;
+
+
+        } catch (HttpStatusCodeException e) {
+            logger.error(e.getMessage());
+            return ResponseEntity.status(e.getRawStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsString());
+        }
+
+    }
+}
 

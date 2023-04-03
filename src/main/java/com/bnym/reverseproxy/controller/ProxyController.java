@@ -18,10 +18,9 @@ public class ProxyController {
     @Autowired
     ProxyService service;
     @RequestMapping("/**")
-    public ResponseEntity<Void> sendRequestToSPM(@RequestBody(required = false) String body,
+    public ResponseEntity<String> sendRequestToSPM(@RequestBody(required = false) String body,
                                                    HttpMethod method, HttpServletRequest request, HttpServletResponse response)
             throws URISyntaxException {
-
         return service.processProxyRequest(body,method,request,response, UUID.randomUUID().toString());
     }
 }
